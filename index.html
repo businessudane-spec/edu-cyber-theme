@@ -49,32 +49,25 @@
     <!-- 2. Scroll-Driven Hero Sticky Wrapper (Provides headroom for cinematic parallax) -->
     <div class="hero-scroll-container">
         <section class="summit-hero" id="hero">
-            <!-- High-fidelity Colorful Gradient Glow Orb (Conic-Radial Blur Blend) -->
-            <div class="hero-orb"></div>
-
-            <!-- Glowing Canvas Particle Circle (Emerges and expands on scroll) -->
-            <canvas id="particleCanvas"></canvas>
-    
-            <!-- Left Absolute Reaching Human Hand -->
-            <div class="hand-wrapper left-hand-wrap">
-                <img src="images/hand.png" alt="Human Hand Reaching" class="floating-hand human-hand" id="humanHand" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80';">
+            <!-- Full-screen Background Video -->
+            <div class="hero-video-wrapper">
+                <video autoplay muted loop playsinline class="hero-bg-video">
+                    <source src="videos/vide.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="hero-video-overlay"></div>
             </div>
     
             <!-- Centered Modern Cyber Summit Typography with Real-time Mirror Reflections -->
             <div class="hero-center-content">
                 <div class="mirror-text-container">
-                    <h1 class="hero-title-main" id="heroTitleMain" data-text="EduCyberSecurity">EduCyberSecurity</h1>
-                    <div class="hero-title-main mirror-reflection" id="heroTitleMainReflect">EduCyberSecurity</div>
+                    <h2 class="hero-title-sub" id="heroTitleSub"></h2>
+                    <div class="hero-title-sub mirror-reflection" id="heroTitleSubReflect"></div>
                 </div>
                 <div class="mirror-text-container">
-                    <h2 class="hero-title-sub" id="heroTitleSub" data-text="Leadership Summit 2026">Leadership Summit 2026</h2>
-                    <div class="hero-title-sub mirror-reflection" id="heroTitleSubReflect">Leadership Summit 2026</div>
+                    <h1 class="hero-title-main" id="heroTitleMain"></h1>
+                    <div class="hero-title-main mirror-reflection" id="heroTitleMainReflect"></div>
                 </div>
-            </div>
-    
-            <!-- Right Absolute Reaching Robot Hand -->
-            <div class="hand-wrapper right-hand-wrap">
-                <img src="images/robo-hand.png" alt="Robot Hand Reaching" class="floating-hand robot-hand" id="robotHand" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80';">
             </div>
     
             <!-- 3. Bottom Hero Footer Information (Exact Mirror of Reference Layout) -->
@@ -82,9 +75,9 @@
                 <div class="hero-footer-inner">
                     <!-- Bottom Left Vision Content -->
                     <div class="hero-footer-left">
-                        <span class="footer-small-label">Summit Vision</span>
+                        <span class="footer-small-label">Connect &bull; Secure &bull; Educate</span>
                         <p class="footer-vision-text">
-                            Bridging the gap between defense and innovation for a secure, resilient future.
+                            Where education stays ahead of every threat — the premier cybersecurity summit for education leaders.
                         </p>
                     </div>
     
@@ -94,7 +87,7 @@
                     <!-- Bottom Right Minimalist Fine Capsules -->
                     <div class="hero-footer-right">
                         <span class="outline-pill">Cyber Defense</span>
-                        <span class="outline-pill">AI Risk Governance</span>
+                        <button class="outline-pill interactive-popup-btn" onclick="openPopupForm()">Reserve your Frontier spot</button>
                         <span class="outline-pill">Global Trust</span>
                     </div>
                 </div>

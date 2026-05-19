@@ -25,170 +25,132 @@ if (typeof Lenis !== 'undefined') {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const humanHand = document.getElementById('humanHand');
-    const robotHand = document.getElementById('robotHand');
     const heroSection = document.getElementById('hero');
     const heroCenterContent = document.querySelector('.hero-center-content');
     const heroFooter = document.querySelector('.hero-footer');
-    const particleCanvas = document.getElementById('particleCanvas');
 
-    let mouseX = 0;
-    let mouseY = 0;
-    let scrollPercent = 0;
+    // 1. 5s Video Pause, Typewriter Title Animation, and Particle Fade Loop
+    const heroVideo = document.querySelector('.hero-bg-video');
 
-    // 1. Particle Canvas Setup & Loop
-    if (particleCanvas) {
-        const ctx = particleCanvas.getContext('2d');
-        // Retina scaling setup (matches CSS scale by 2x for sharp pixels)
-        particleCanvas.width = 1320; 
-        particleCanvas.height = 1320;
+    const titleMain = document.getElementById('heroTitleMain');
+    const titleMainReflect = document.getElementById('heroTitleMainReflect');
+    const titleSub = document.getElementById('heroTitleSub');
+    const titleSubReflect = document.getElementById('heroTitleSubReflect');
 
-        const particles = [];
-        const numParticles = 280; // Double the density to make it rich and crowded
+    if (heroVideo && titleMain) {
+        heroVideo.removeAttribute('loop'); // We control the loop manually
+        
+        const subText = "Leadership Summit 2026";
+        const mainText = "EduCyberSecurity";
+        
+        let isWaiting = false;
 
-        // Create swirling particle systems
-        for (let i = 0; i < numParticles; i++) {
-            particles.push({
-                angle: Math.random() * Math.PI * 2,
-                orbitRadius: 180 + Math.random() * 95,
-                speed: 0.0015 + Math.random() * 0.0025, // Much slower, gentle floating speeds
-                size: 1.5 + Math.random() * 3, // Refined particle sizes for higher density
-                alpha: 0.2 + Math.random() * 0.8,
-                color: Math.random() > 0.45 ? '#68BD46' : '#002b5e', // Lime green & deep navy
-                pulseSpeed: 0.02 + Math.random() * 0.03,
-                pulseVal: Math.random()
-            });
-        }
-
-        function animateParticles() {
-            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-            const centerX = particleCanvas.width / 2;
-            const centerY = particleCanvas.height / 2;
-
-            // Draw glowing radial core behind text
-            if (scrollPercent > 0.05) {
-                ctx.save();
-                ctx.beginPath();
-                const coreGlowRad = 150 + scrollPercent * 250;
-                const grad = ctx.createRadialGradient(centerX, centerY, 50, centerX, centerY, coreGlowRad);
-                grad.addColorStop(0, 'rgba(104, 189, 70, ' + (0.15 * scrollPercent) + ')');
-                grad.addColorStop(0.5, 'rgba(0, 43, 94, ' + (0.08 * scrollPercent) + ')');
-                grad.addColorStop(1, 'rgba(3, 10, 22, 0)');
-                ctx.fillStyle = grad;
-                ctx.arc(centerX, centerY, coreGlowRad, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
+        function clearText() {
+            titleMain.innerHTML = '';
+            if (titleMainReflect) titleMainReflect.innerHTML = '';
+            titleSub.innerHTML = '';
+            titleSub.classList.remove('pill-active');
+            if (titleSubReflect) {
+                titleSubReflect.innerHTML = '';
+                titleSubReflect.classList.remove('pill-active');
             }
+        }
+        
+        // Typewriter effect function supporting new lines and particle spans
+        function typeWriter(element, elementReflect, text, speed, callback) {
+            let i = 0;
+            function type() {
+                if (i < text.length) {
+                    const char = text.charAt(i);
+                    if (char === '\n') {
+                        element.appendChild(document.createElement('br'));
+                        if (elementReflect) elementReflect.appendChild(document.createElement('br'));
+                    } else if (char === ' ') {
+                        element.appendChild(document.createTextNode(' '));
+                        if (elementReflect) elementReflect.appendChild(document.createTextNode(' '));
+                    } else {
+                        // Main character
+                        const span = document.createElement('span');
+                        span.className = 'particle-char';
+                        span.style.display = 'inline-block';
+                        span.style.transition = 'transform 2.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-out, filter 2.0s ease';
+                        span.textContent = char;
+                        element.appendChild(span);
+                        
+                        // Reflection character
+                        if (elementReflect) {
+                            const reflectSpan = document.createElement('span');
+                            reflectSpan.className = 'particle-char';
+                            reflectSpan.style.display = 'inline-block';
+                            reflectSpan.style.transition = 'transform 2.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 2.0s ease-out, filter 2.0s ease';
+                            reflectSpan.textContent = char;
+                            elementReflect.appendChild(reflectSpan);
+                        }
+                    }
+                    i++;
+                    setTimeout(type, speed);
+                } else if (callback) {
+                    callback();
+                }
+            }
+            type();
+        }
 
-            // Draw individual swirling circular particles
-            ctx.save();
-            ctx.shadowBlur = 15;
+        // Smooth particle drift fade effect
+        function explodeText() {
+            // Fade out the pill background
+            titleSub.classList.remove('pill-active');
+            if (titleSubReflect) titleSubReflect.classList.remove('pill-active');
             
-            particles.forEach(p => {
-                // Swirl speed accelerates mildly as scroll progress advances
-                const speedMultiplier = 1 + scrollPercent * 1.8;
-                p.angle += p.speed * speedMultiplier;
-
-                // Orbit radius expands dynamically outward on scroll
-                const baseRadius = p.orbitRadius;
-                const expandedRadius = baseRadius + (scrollPercent * 340);
-
-                // Dynamically pulsing particle sizes
-                p.pulseVal += p.pulseSpeed;
-                const sizePulse = p.size * (0.95 + Math.sin(p.pulseVal) * 0.15);
-
-                const x = centerX + Math.cos(p.angle) * expandedRadius;
-                const y = centerY + Math.sin(p.angle) * expandedRadius;
-
-                ctx.fillStyle = p.color;
-                ctx.shadowColor = p.color;
-                ctx.globalAlpha = p.alpha * Math.min(1, scrollPercent * 1.5);
-
-                ctx.beginPath();
-                ctx.arc(x, y, sizePulse, 0, Math.PI * 2);
-                ctx.fill();
+            const chars = document.querySelectorAll('.particle-char');
+            chars.forEach(char => {
+                const tx = (Math.random() - 0.5) * 40; // Gentle horizontal drift
+                const ty = -(40 + Math.random() * 80); // Gentle float upwards
+                const rot = (Math.random() - 0.5) * 45; // Slow rotation
+                
+                // Trigger CSS smooth drift
+                char.style.transform = `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(0.9)`;
+                char.style.opacity = '0';
+                char.style.filter = 'blur(6px)';
             });
-
-            ctx.restore();
-            requestAnimationFrame(animateParticles);
         }
 
-        // Start particle thread loop
-        animateParticles();
-    }
+        clearText();
 
-    // 2. Interactive Mouse Parallax
-    if (heroSection) {
-        heroSection.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) - 0.5;
-            mouseY = (e.clientY / window.innerHeight) - 0.5;
-            updatePositions();
+        heroVideo.addEventListener('timeupdate', () => {
+            // When video hits exactly 5 seconds, pause it
+            if (!isWaiting && heroVideo.currentTime >= 5.0) {
+                heroVideo.pause();
+                isWaiting = true;
+                
+                // Show pill background
+                titleSub.classList.add('pill-active');
+                if (titleSubReflect) titleSubReflect.classList.add('pill-active');
+                
+                // 1. Start typing the subtitle (Pill box), then the main title
+                typeWriter(titleSub, titleSubReflect, subText, 40, () => {
+                    typeWriter(titleMain, titleMainReflect, mainText, 60, () => {
+                        
+                        // 2. Text has finished appearing. Wait 5 seconds here.
+                        setTimeout(() => {
+                            // 3. Trigger the shattered text particle explosion
+                            explodeText();
+                            
+                            // 4. Wait for the explosion animation to settle before resetting video
+                            setTimeout(() => {
+                                clearText();
+                                heroVideo.currentTime = 0;
+                                heroVideo.play().then(() => {
+                                    isWaiting = false; // Opens the gate for the next loop
+                                }).catch(e => console.log('Playback error', e));
+                            }, 1800);
+                            
+                        }, 5000);
+                        
+                    });
+                });
+            }
         });
-
-        heroSection.addEventListener('mouseleave', () => {
-            mouseX = 0;
-            mouseY = 0;
-            updatePositions();
-        });
-    }
-
-    // 3. Scroll Listener for Sticky Scrollytelling Parallax
-    window.addEventListener('scroll', () => {
-        const scrollContainer = document.querySelector('.hero-scroll-container');
-        if (!scrollContainer) return;
-
-        const rect = scrollContainer.getBoundingClientRect();
-        const totalScrollable = rect.height - window.innerHeight;
-        const scrolled = -rect.top;
-        scrollPercent = Math.max(0, Math.min(scrolled / totalScrollable, 1));
-
-        updatePositions();
-    });
-
-    // 4. Unified Rendering System (Fuses mouse parallax coordinates with scroll percentage values)
-    function updatePositions() {
-        // A. Update Reaching Hands (glide back off-screen left/right & fade out on scroll)
-        if (humanHand) {
-            // Left Human hand slides leftwards and fades
-            const mouseOffset = mouseX * 25;
-            const scrollOffset = -scrollPercent * 650; 
-            const totalX = mouseOffset + scrollOffset;
-            const opacity = Math.max(0, 1 - scrollPercent * 2.2);
-
-            humanHand.style.transform = `translate(${totalX}px, 0px) scaleX(-1)`;
-            humanHand.style.opacity = opacity;
-        }
-
-        if (robotHand) {
-            // Right Robot hand slides rightwards and fades
-            const mouseOffset = mouseX * -25;
-            const scrollOffset = scrollPercent * 650; 
-            const totalX = mouseOffset + scrollOffset;
-            const opacity = Math.max(0, 1 - scrollPercent * 2.2);
-
-            robotHand.style.transform = `translate(${totalX}px, 0px) scaleX(-1)`;
-            robotHand.style.opacity = opacity;
-        }
-
-        // B. Update Center Typography (drifts upward and fades slowly)
-        if (heroCenterContent) {
-            const opacity = Math.max(0, 1 - scrollPercent * 1.5);
-            const scale = 1 - scrollPercent * 0.05;
-            const yOffset = -scrollPercent * 100; 
-            heroCenterContent.style.transform = `translateY(${yOffset}px) scale(${scale})`;
-            heroCenterContent.style.opacity = opacity;
-        }
-
-        // C. Update Hero Footer (Fades out quickly)
-        if (heroFooter) {
-            const opacity = Math.max(0, 1 - scrollPercent * 3.5); 
-            heroFooter.style.opacity = opacity;
-        }
-
-        // D. Update Glowing Particle Canvas opacity
-        if (particleCanvas) {
-            particleCanvas.style.opacity = scrollPercent;
-        }
     }
 
     // 5. '+' Menu toggle animation
