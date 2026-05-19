@@ -1,0 +1,12 @@
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS system files
+.DS_Store
+
+# OneDrive / OS temporary files
+*.tmp
+*.log
+.git/

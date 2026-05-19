@@ -1,0 +1,1373 @@
+// EduCyberSecurity Summit 2026 - Core Interactions & Scroll-Driven Parallax Scrollytelling
+
+// --------------------------------------------------------------------------
+// Apple-Like Buttery Smooth Scroll Engine (Lenis) Initialization
+// --------------------------------------------------------------------------
+let lenisInstance;
+if (typeof Lenis !== 'undefined') {
+    lenisInstance = new Lenis({
+        duration: 1.2, // Perfect duration for buttery momentum
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Apple product page easing (exponential ease-out)
+        direction: 'vertical',
+        gestureDirection: 'vertical',
+        smooth: true,
+        mouseMultiplier: 1.0, // High-performance scroll sensitivity
+        smoothTouch: false, // Standard natural mobile momentum
+        touchMultiplier: 2.0,
+        infinite: false
+    });
+
+    function lenisRaf(time) {
+        lenisInstance.raf(time);
+        requestAnimationFrame(lenisRaf);
+    }
+    requestAnimationFrame(lenisRaf);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const humanHand = document.getElementById('humanHand');
+    const robotHand = document.getElementById('robotHand');
+    const heroSection = document.getElementById('hero');
+    const heroCenterContent = document.querySelector('.hero-center-content');
+    const heroFooter = document.querySelector('.hero-footer');
+    const particleCanvas = document.getElementById('particleCanvas');
+
+    let mouseX = 0;
+    let mouseY = 0;
+    let scrollPercent = 0;
+
+    // 1. Particle Canvas Setup & Loop
+    if (particleCanvas) {
+        const ctx = particleCanvas.getContext('2d');
+        // Retina scaling setup (matches CSS scale by 2x for sharp pixels)
+        particleCanvas.width = 1320; 
+        particleCanvas.height = 1320;
+
+        const particles = [];
+        const numParticles = 280; // Double the density to make it rich and crowded
+
+        // Create swirling particle systems
+        for (let i = 0; i < numParticles; i++) {
+            particles.push({
+                angle: Math.random() * Math.PI * 2,
+                orbitRadius: 180 + Math.random() * 95,
+                speed: 0.0015 + Math.random() * 0.0025, // Much slower, gentle floating speeds
+                size: 1.5 + Math.random() * 3, // Refined particle sizes for higher density
+                alpha: 0.2 + Math.random() * 0.8,
+                color: Math.random() > 0.45 ? '#68BD46' : '#002b5e', // Lime green & deep navy
+                pulseSpeed: 0.02 + Math.random() * 0.03,
+                pulseVal: Math.random()
+            });
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            const centerX = particleCanvas.width / 2;
+            const centerY = particleCanvas.height / 2;
+
+            // Draw glowing radial core behind text
+            if (scrollPercent > 0.05) {
+                ctx.save();
+                ctx.beginPath();
+                const coreGlowRad = 150 + scrollPercent * 250;
+                const grad = ctx.createRadialGradient(centerX, centerY, 50, centerX, centerY, coreGlowRad);
+                grad.addColorStop(0, 'rgba(104, 189, 70, ' + (0.15 * scrollPercent) + ')');
+                grad.addColorStop(0.5, 'rgba(0, 43, 94, ' + (0.08 * scrollPercent) + ')');
+                grad.addColorStop(1, 'rgba(3, 10, 22, 0)');
+                ctx.fillStyle = grad;
+                ctx.arc(centerX, centerY, coreGlowRad, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // Draw individual swirling circular particles
+            ctx.save();
+            ctx.shadowBlur = 15;
+            
+            particles.forEach(p => {
+                // Swirl speed accelerates mildly as scroll progress advances
+                const speedMultiplier = 1 + scrollPercent * 1.8;
+                p.angle += p.speed * speedMultiplier;
+
+                // Orbit radius expands dynamically outward on scroll
+                const baseRadius = p.orbitRadius;
+                const expandedRadius = baseRadius + (scrollPercent * 340);
+
+                // Dynamically pulsing particle sizes
+                p.pulseVal += p.pulseSpeed;
+                const sizePulse = p.size * (0.95 + Math.sin(p.pulseVal) * 0.15);
+
+                const x = centerX + Math.cos(p.angle) * expandedRadius;
+                const y = centerY + Math.sin(p.angle) * expandedRadius;
+
+                ctx.fillStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.globalAlpha = p.alpha * Math.min(1, scrollPercent * 1.5);
+
+                ctx.beginPath();
+                ctx.arc(x, y, sizePulse, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.restore();
+            requestAnimationFrame(animateParticles);
+        }
+
+        // Start particle thread loop
+        animateParticles();
+    }
+
+    // 2. Interactive Mouse Parallax
+    if (heroSection) {
+        heroSection.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+            updatePositions();
+        });
+
+        heroSection.addEventListener('mouseleave', () => {
+            mouseX = 0;
+            mouseY = 0;
+            updatePositions();
+        });
+    }
+
+    // 3. Scroll Listener for Sticky Scrollytelling Parallax
+    window.addEventListener('scroll', () => {
+        const scrollContainer = document.querySelector('.hero-scroll-container');
+        if (!scrollContainer) return;
+
+        const rect = scrollContainer.getBoundingClientRect();
+        const totalScrollable = rect.height - window.innerHeight;
+        const scrolled = -rect.top;
+        scrollPercent = Math.max(0, Math.min(scrolled / totalScrollable, 1));
+
+        updatePositions();
+    });
+
+    // 4. Unified Rendering System (Fuses mouse parallax coordinates with scroll percentage values)
+    function updatePositions() {
+        // A. Update Reaching Hands (glide back off-screen left/right & fade out on scroll)
+        if (humanHand) {
+            // Left Human hand slides leftwards and fades
+            const mouseOffset = mouseX * 25;
+            const scrollOffset = -scrollPercent * 650; 
+            const totalX = mouseOffset + scrollOffset;
+            const opacity = Math.max(0, 1 - scrollPercent * 2.2);
+
+            humanHand.style.transform = `translate(${totalX}px, 0px) scaleX(-1)`;
+            humanHand.style.opacity = opacity;
+        }
+
+        if (robotHand) {
+            // Right Robot hand slides rightwards and fades
+            const mouseOffset = mouseX * -25;
+            const scrollOffset = scrollPercent * 650; 
+            const totalX = mouseOffset + scrollOffset;
+            const opacity = Math.max(0, 1 - scrollPercent * 2.2);
+
+            robotHand.style.transform = `translate(${totalX}px, 0px) scaleX(-1)`;
+            robotHand.style.opacity = opacity;
+        }
+
+        // B. Update Center Typography (drifts upward and fades slowly)
+        if (heroCenterContent) {
+            const opacity = Math.max(0, 1 - scrollPercent * 1.5);
+            const scale = 1 - scrollPercent * 0.05;
+            const yOffset = -scrollPercent * 100; 
+            heroCenterContent.style.transform = `translateY(${yOffset}px) scale(${scale})`;
+            heroCenterContent.style.opacity = opacity;
+        }
+
+        // C. Update Hero Footer (Fades out quickly)
+        if (heroFooter) {
+            const opacity = Math.max(0, 1 - scrollPercent * 3.5); 
+            heroFooter.style.opacity = opacity;
+        }
+
+        // D. Update Glowing Particle Canvas opacity
+        if (particleCanvas) {
+            particleCanvas.style.opacity = scrollPercent;
+        }
+    }
+
+    // 5. '+' Menu toggle animation
+    const menuToggle = document.getElementById('menuToggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            const plusIcon = menuToggle.querySelector('.plus-circle i');
+            if (plusIcon) {
+                plusIcon.style.transition = 'transform 0.4s ease';
+                if (plusIcon.style.transform === 'rotate(45deg)') {
+                    plusIcon.style.transform = 'rotate(0deg)';
+                    menuToggle.style.borderColor = 'var(--color-border)';
+                } else {
+                    plusIcon.style.transform = 'rotate(45deg)';
+                    menuToggle.style.borderColor = 'var(--color-secondary)';
+                }
+            }
+        });
+    }
+
+    // 6. Interactive 3D Cyber-Grid Space Tunnel Canvas (Volumetric Sci-Fi Video Parallax)
+    const warpCanvas = document.getElementById('warpCanvas');
+    if (warpCanvas) {
+        const wCtx = warpCanvas.getContext('2d');
+        
+        let wWidth = 0;
+        let wHeight = 0;
+        
+        function resizeWarpCanvas() {
+            wWidth = warpCanvas.clientWidth;
+            wHeight = warpCanvas.clientHeight;
+            warpCanvas.width = wWidth * (window.devicePixelRatio || 1);
+            warpCanvas.height = wHeight * (window.devicePixelRatio || 1);
+        }
+        
+        window.addEventListener('resize', resizeWarpCanvas);
+        resizeWarpCanvas();
+
+        const numRings = 24; // 3D structural concentric rings
+        const maxDepth = 1000;
+        const fov = 350;
+        const rings = [];
+
+        // Initialize 3D concentric structural ribs with individual panels
+        for (let i = 0; i < numRings; i++) {
+            rings.push({
+                z: (i / numRings) * maxDepth, // Evenly distributed depths
+                rotSpeed: (Math.random() - 0.5) * 0.008, // Slow organic rotation speed
+                angleOffset: Math.random() * Math.PI * 2,
+                // Multiple curved panels on each structural ring with custom color weights
+                panels: [
+                    { start: 0, length: 0.6 + Math.random() * 1.4, color: '#68BD46' }, // Lime green accent
+                    { start: 2.2, length: 0.4 + Math.random() * 1.0, color: '#38bdf8' }, // Cyan light
+                    { start: 4.4, length: 0.5 + Math.random() * 1.5, color: '#38bdf8' }
+                ]
+            });
+        }
+
+        // Scroll Velocity Tracker for dynamic warp speed triggering
+        let lastScrollY = window.scrollY;
+        let scrollSpeed = 0;
+        let baseSpeed = 1.6; // Constant calm forward drift speed
+        let targetWarpSpeed = baseSpeed;
+        let currentWarpSpeed = baseSpeed;
+
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.scrollY;
+            scrollSpeed = Math.abs(currentScroll - lastScrollY);
+            lastScrollY = currentScroll;
+
+            // Elevate warp speed directly proportional to scroll speed
+            targetWarpSpeed = baseSpeed + Math.min(scrollSpeed * 0.85, 45); // Cap max speed to maintain visual cohesion
+        });
+
+        function animateWarp() {
+            const internalScale = window.devicePixelRatio || 1;
+            const wCenterX = (warpCanvas.width / 2);
+            const wCenterY = (warpCanvas.height / 2);
+
+            // Slightly transparent canvas overlay to build glowing trails
+            const trailAlpha = currentWarpSpeed > 5 ? 0.08 : 0.15;
+            wCtx.fillStyle = `rgba(0, 0, 0, ${trailAlpha})`;
+            wCtx.fillRect(0, 0, warpCanvas.width, warpCanvas.height);
+
+            // Interpolate speed smoothly for ultra-premium easing
+            currentWarpSpeed += (targetWarpSpeed - currentWarpSpeed) * 0.08;
+            
+            // Decelerate speed target back to calm base speed
+            targetWarpSpeed += (baseSpeed - targetWarpSpeed) * 0.05;
+
+            // Draw glowing cosmic core horizon
+            wCtx.save();
+            wCtx.beginPath();
+            const horizonGlow = 100 + currentWarpSpeed * 4;
+            const coreGrad = wCtx.createRadialGradient(wCenterX, wCenterY, 5, wCenterX, wCenterY, horizonGlow * internalScale);
+            coreGrad.addColorStop(0, 'rgba(56, 189, 248, 0.08)');
+            coreGrad.addColorStop(0.5, 'rgba(104, 189, 70, 0.03)');
+            coreGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            wCtx.fillStyle = coreGrad;
+            wCtx.arc(wCenterX, wCenterY, horizonGlow * internalScale, 0, Math.PI * 2);
+            wCtx.fill();
+            wCtx.restore();
+
+            // Perspective longitudinal structural grid lines (Perspective spokes)
+            wCtx.save();
+            wCtx.strokeStyle = 'rgba(56, 189, 248, 0.05)';
+            wCtx.lineWidth = 1 * internalScale;
+            wCtx.beginPath();
+            const numSpokes = 16;
+            for (let i = 0; i < numSpokes; i++) {
+                const angle = (i / numSpokes) * Math.PI * 2;
+                wCtx.moveTo(wCenterX, wCenterY);
+                wCtx.lineTo(wCenterX + Math.cos(angle) * wWidth * internalScale, wCenterY + Math.sin(angle) * wHeight * internalScale);
+            }
+            wCtx.stroke();
+            wCtx.restore();
+
+            // Draw Concentric Ribs & Rotating Panel Layers
+            rings.forEach(ring => {
+                // Zoom forward
+                ring.z -= currentWarpSpeed;
+
+                // Reset depth once it passes the camera viewport plane
+                if (ring.z <= 0) {
+                    ring.z = maxDepth;
+                    ring.angleOffset = Math.random() * Math.PI * 2;
+                }
+
+                // Smooth panel rotation drift, scaling slightly under velocity
+                ring.angleOffset += ring.rotSpeed * (1 + currentWarpSpeed * 0.04);
+
+                // Project depth coordinate to screen radius
+                const zVal = Math.max(1, ring.z);
+                const baseRadius = 240; // Core radius
+                const radius = (baseRadius / zVal) * fov * internalScale;
+
+                // Compute depth alpha fading (bell curve to keep center clean and outer edges soft)
+                const depthRatio = (1 - (ring.z / maxDepth)); 
+                const alpha = Math.sin(depthRatio * Math.PI) * (0.15 + (currentWarpSpeed * 0.007));
+
+                // Draw rib panels if they sit within viewport boundaries
+                if (radius > 5 && radius < wWidth * internalScale) {
+                    wCtx.save();
+                    wCtx.shadowBlur = 10 + (depthRatio * 15);
+                    wCtx.lineWidth = (2 + depthRatio * 6) * internalScale; // Panel lines get thicker as they zoom closer!
+                    wCtx.lineCap = 'round';
+
+                    ring.panels.forEach(p => {
+                        wCtx.strokeStyle = p.color;
+                        wCtx.shadowColor = p.color;
+                        wCtx.globalAlpha = Math.max(0.02, Math.min(0.85, alpha));
+
+                        // Draw curved segment representing reflective cyber metal panels
+                        wCtx.beginPath();
+                        const sAngle = p.start + ring.angleOffset;
+                        const eAngle = sAngle + p.length;
+                        wCtx.arc(wCenterX, wCenterY, radius, sAngle, eAngle);
+                        wCtx.stroke();
+                    });
+
+                    wCtx.restore();
+                }
+            });
+
+            requestAnimationFrame(animateWarp);
+        }
+
+        // Run space warp loop
+        animateWarp();
+    }
+
+    // 7. Intersection Observer for Stat Counters Count Up Animation (Animated from 0 with cubic ease-out)
+    const statsSection = document.getElementById('warpSection');
+    const statNumbers = document.querySelectorAll('.stat-number');
+    
+    if (statsSection && statNumbers.length > 0) {
+        let animated = false;
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !animated) {
+                    animated = true; // Trigger only once when visible
+                    
+                    statNumbers.forEach(num => {
+                        const target = parseInt(num.getAttribute('data-target'), 10);
+                        const duration = 2000; // Count over exactly 2.0s
+                        const startTime = performance.now();
+                        
+                        function updateCount(currentTime) {
+                            const elapsedTime = currentTime - startTime;
+                            const progress = Math.min(elapsedTime / duration, 1);
+                            
+                            // Cubic ease-out: starts rapid and settles slowly to final numbers
+                            const easeProgress = 1 - Math.pow(1 - progress, 3);
+                            const currentValue = Math.floor(easeProgress * target);
+                            
+                            num.textContent = currentValue;
+                            
+                            if (progress < 1) {
+                                requestAnimationFrame(updateCount);
+                            } else {
+                                num.textContent = target; // Ensure exact targeted value
+                            }
+                        }
+                        
+                        requestAnimationFrame(updateCount);
+                    });
+                }
+            });
+        }, { threshold: 0.15 }); // Trigger when 15% of the stats section enters the viewport
+        
+        observer.observe(statsSection);
+    }
+
+    // 8. Dynamic Tabs Switch Logic (About EduCyberSecurity Section)
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+    
+    if (tabBtns.length > 0 && tabPanes.length > 0) {
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.getAttribute('data-tab');
+                
+                // Active button toggle
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Active pane switch with animation timing
+                tabPanes.forEach(pane => {
+                    pane.classList.remove('active');
+                    if (pane.id === `pane-${targetTab}`) {
+                        pane.classList.add('active');
+                    }
+                });
+            });
+        });
+    }
+
+    // 9. Scroll Reveal Stagger Logic for About Section (Triggers on Scroll)
+    const aboutSection = document.getElementById('aboutSection');
+    const revealElements = document.querySelectorAll('#aboutSection .reveal-element');
+    
+    if (aboutSection && revealElements.length > 0) {
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Trigger sequential cascade reveal
+                    revealElements.forEach((el, index) => {
+                        setTimeout(() => {
+                            el.classList.add('revealed');
+                        }, index * 100); // Elegant 100ms staggered delay for smooth sequential reveals!
+                    });
+                    
+                    // Unobserve once triggered to lock animation state
+                    revealObserver.unobserve(aboutSection);
+                }
+            });
+        }, { threshold: 0.15 }); // Trigger when 15% of the section is visible
+        
+        revealObserver.observe(aboutSection);
+    }
+
+    // 10. Scroll Stack & Fan Physics Interpolation Engine for Action Section
+    const actionSection = document.getElementById('actionSection');
+    if (actionSection) {
+        const actionCards = actionSection.querySelectorAll('.action-card');
+        
+        // High-performance scroll handler (automatic spring fanning on entry)
+        function updateCardFanning() {
+            if (window.innerWidth <= 991) {
+                actionSection.classList.remove('spread-active');
+                return;
+            }
+
+            const rect = actionSection.getBoundingClientRect();
+            const sectionHeight = rect.height;
+            const windowHeight = window.innerHeight;
+            
+            const scrollDistance = -rect.top;
+            const scrollMax = sectionHeight - windowHeight;
+            
+            let progress = scrollDistance / scrollMax;
+            progress = Math.max(0, Math.min(1, progress));
+
+            // Trigger full spring-fanning animation once visitor scrolls 10% into the section
+            if (progress >= 0.10) {
+                actionSection.classList.add('spread-active');
+            } else {
+                actionSection.classList.remove('spread-active');
+            }
+        }
+
+        // Bind events
+        window.addEventListener('scroll', updateCardFanning, { passive: true });
+        window.addEventListener('resize', updateCardFanning);
+        updateCardFanning(); // Run initial execution
+    }
+
+    // 10b. Cybernetic Animated Spiral Background Engine (IntersectionObserver Powered)
+    const spiralCanvas = document.getElementById('actionSpiralCanvas');
+    if (spiralCanvas && actionSection) {
+        const ctx = spiralCanvas.getContext('2d');
+        let animationFrameId;
+        let rotationAngle = 0;
+        let isVisible = false;
+
+        // Resize handler with DPR backing for retina/4k visual clarity
+        function resizeCanvas() {
+            const rect = spiralCanvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            spiralCanvas.width = rect.width * dpr;
+            spiralCanvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Spiral drawing properties
+        const spiralArms = 3;
+        const baseOffset = 0.055; // Tightness of the logarithmic spiral
+        let points = [];
+        
+        // Generate static nodes along spiral paths for consistent fluid flow
+        for (let arm = 0; arm < spiralArms; arm++) {
+            const startAngle = (arm * Math.PI * 2) / spiralArms;
+            for (let i = 0; i < 60; i++) {
+                const theta = i * 0.18; // Angular step
+                const r = 20 * Math.pow(Math.E, baseOffset * i); // Logarithmic radius
+                points.push({
+                    arm: arm,
+                    theta: startAngle + theta,
+                    r: r,
+                    baseAlpha: 0.15 + (1 - i / 60) * 0.45, // Brighter in the center, soft at edges
+                    size: 1 + Math.random() * 2.0
+                });
+            }
+        }
+
+        function drawSpiral() {
+            if (!isVisible) return;
+
+            const rect = spiralCanvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const centerY = height / 2 + 10; // Centered behind fanned cards
+
+            ctx.clearRect(0, 0, width, height);
+
+            rotationAngle += 0.0015; // Slowly rotate the entire radar coordinate system
+
+            // 1. Draw subtle rotating concentric orbital cyber-rings
+            ctx.strokeStyle = 'rgba(0, 43, 94, 0.04)';
+            ctx.lineWidth = 1;
+            const rings = [180, 320, 480];
+            rings.forEach((radius, idx) => {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw rotating cyber ticks along the rings
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(rotationAngle * (idx % 2 === 0 ? 1.2 : -1.2));
+                ctx.strokeStyle = 'rgba(104, 189, 70, 0.12)';
+                ctx.setLineDash([4, 60]);
+                ctx.beginPath();
+                ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            });
+
+            // 2. Draw rotating logarithmic spiral arms (Cyber Secure Data Flow)
+            points.forEach(pt => {
+                // Flow nodes outwards dynamically by adding offset to theta
+                const currentTheta = pt.theta + rotationAngle * 1.5;
+                const x = centerX + Math.cos(currentTheta) * pt.r;
+                const y = centerY + Math.sin(currentTheta) * pt.r;
+
+                if (x >= 0 && x <= width && y >= 0 && y <= height) {
+                    ctx.fillStyle = `rgba(104, 189, 70, ${pt.baseAlpha})`;
+                    ctx.shadowColor = 'rgba(104, 189, 70, 0.25)';
+                    ctx.shadowBlur = 4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, pt.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0; // Reset shadow for performance
+                }
+            });
+
+            // 3. Draw cyber scanning threat sweep wave (soft green sweeping line)
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(rotationAngle * 2);
+            
+            const scanGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 600);
+            scanGrad.addColorStop(0, 'rgba(104, 189, 70, 0.05)');
+            scanGrad.addColorStop(1, 'rgba(104, 189, 70, 0)');
+            
+            ctx.fillStyle = scanGrad;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, 600, 0, Math.PI * 0.22); // Narrow radar sweep sector
+            ctx.lineTo(0, 0);
+            ctx.fill();
+            ctx.restore();
+
+            animationFrameId = requestAnimationFrame(drawSpiral);
+        }
+
+        // Intersection Observer to run canvas drawing loop ONLY when section is visible
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                isVisible = entry.isIntersecting;
+                if (isVisible) {
+                    cancelAnimationFrame(animationFrameId);
+                    drawSpiral();
+                } else {
+                    cancelAnimationFrame(animationFrameId);
+                }
+            });
+        }, { threshold: 0.05 });
+        
+        observer.observe(actionSection);
+    }
+
+    // 11. Scroll Observer for Stats Performance Sliders & Live Simulation
+    const statsPerformanceSection = document.getElementById('statsPerformanceSection');
+    if (statsPerformanceSection) {
+        const statsPerfObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    statsPerformanceSection.classList.add('revealed');
+                    statsPerfObserver.unobserve(statsPerformanceSection); // Trigger toggle animation once
+                }
+            });
+        }, { threshold: 0.15 }); // Trigger when 15% of the section is visible
+        
+        statsPerfObserver.observe(statsPerformanceSection);
+
+        // Cyber Simulation Interaction Script
+        const performanceRows = statsPerformanceSection.querySelectorAll('.performance-row');
+        const imgWrapper = statsPerformanceSection.querySelector('.performance-image-wrapper');
+        const hudIcon = statsPerformanceSection.querySelector('.scan-alert-icon');
+        const hudText = statsPerformanceSection.querySelector('.scan-alert-text');
+
+        performanceRows.forEach(row => {
+            row.addEventListener('click', () => {
+                const threatType = row.getAttribute('data-threat');
+                const statusEl = row.querySelector('.threat-status');
+                
+                // Clear any running timeouts on this specific row to prevent animation overlaps
+                if (row.simTimeout) clearTimeout(row.simTimeout);
+                if (row.hudTimeout) clearTimeout(row.hudTimeout);
+
+                // If this specific threat is already actively mitigated, reset it!
+                if (row.classList.contains('sim-active')) {
+                    row.classList.remove('sim-active');
+                    statusEl.textContent = 'Ready to test';
+                    statusEl.className = 'threat-status status-vulnerable';
+                    
+                    // Hide scanning HUD only if no other rows are currently active
+                    const anyActive = Array.from(performanceRows).some(r => r.classList.contains('sim-active'));
+                    if (!anyActive && imgWrapper.classList.contains('scanning')) {
+                        imgWrapper.classList.remove('scanning');
+                    }
+                    return;
+                }
+
+                // Activate this threat simulation independently (other rows stay exactly as they are!)
+                row.classList.add('sim-active');
+                imgWrapper.classList.add('scanning');
+                
+                // Set HUD Threat Text
+                let threatActionText = 'ANALYZING THREAT...';
+                let hudIconSymbol = '⚠️';
+                if (threatType === 'ransomware') {
+                    threatActionText = 'ISOLATING PAYLOAD...';
+                    hudIconSymbol = '☣️';
+                } else if (threatType === 'exfil') {
+                    threatActionText = 'BLOCKING DB EXFILTRATION...';
+                    hudIconSymbol = '📡';
+                } else if (threatType === 'zeroday') {
+                    threatActionText = 'PREVENTING OVERFLOW...';
+                    hudIconSymbol = '🛡️';
+                }
+
+                if (hudIcon) hudIcon.textContent = hudIconSymbol;
+                if (hudText) hudText.textContent = threatActionText;
+                
+                // Change row status to active simulation
+                statusEl.textContent = 'Simulating threat...';
+                statusEl.className = 'threat-status status-scanning';
+
+                // Simulate progress timing (2 seconds scan, then contain threat!)
+                row.simTimeout = setTimeout(() => {
+                    if (row.classList.contains('sim-active')) {
+                        statusEl.textContent = 'Endpoint Secured';
+                        statusEl.className = 'threat-status status-secured';
+                        
+                        if (hudIcon) hudIcon.textContent = '✅';
+                        if (hudText) hudText.textContent = 'MITIGATION SUCCESSFUL';
+                        
+                        // Briefly pulse HUD green, then fade it back out to restore normal live feed
+                        row.hudTimeout = setTimeout(() => {
+                            if (row.classList.contains('sim-active')) {
+                                // Only hide scanning overlay if no other row is active anymore
+                                const anyActive = Array.from(performanceRows).some(r => r.classList.contains('sim-active'));
+                                if (!anyActive) {
+                                    imgWrapper.classList.remove('scanning');
+                                }
+                            }
+                        }, 1200);
+                    }
+                }, 2000);
+            });
+        });
+    }
+
+    // 12. Premium Waving Dotted Surface 3D Canvas Background Engine
+    const dotCanvas = document.getElementById('wavingDotCanvas');
+    const contactSection = document.getElementById('contactSection');
+    if (dotCanvas && contactSection) {
+        const ctx = dotCanvas.getContext('2d');
+        let animationFrameId;
+        let phase = 0;
+        let isVisible = false;
+
+        // Resize handler with High-DPR backing for Retina visual precision
+        function resizeDotCanvas() {
+            const rect = dotCanvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            dotCanvas.width = rect.width * dpr;
+            dotCanvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeDotCanvas);
+        resizeDotCanvas();
+
+        // 3D Grid constants
+        const rows = 28;
+        const cols = 45;
+        const spacingX = 42;
+        const spacingZ = 36;
+        const focalLength = 340; // Depth perspective multiplier
+        const rotX = 1.05; // 60-degree back-tilt for panoramic landscape horizon
+
+        function drawWavingSurface() {
+            if (!isVisible) return;
+
+            const rect = dotCanvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const centerY = height / 2 - 20;
+
+            ctx.clearRect(0, 0, width, height);
+
+            phase += 0.015; // Animation speed tick
+
+            // Slow swaying yaw angle (radar breathing drift)
+            const rotY = 0.06 * Math.sin(phase * 0.2);
+
+            // Double loop to project grid coordinates (col, row)
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    // 1. Calculate base 3D coordinates relative to center
+                    const x3d = (c - cols / 2) * spacingX;
+                    const z3d = (r - rows / 2) * spacingZ;
+                    
+                    // Height elevation maps double-sinusoidal wave equations
+                    const y3d = Math.sin(c * 0.15 + phase) * Math.cos(r * 0.12 + phase) * 36;
+
+                    // 2. Perform 3D rotations
+                    // Rotate on X axis (tilt backwards)
+                    const rotY1 = y3d * Math.cos(rotX) - z3d * Math.sin(rotX);
+                    const rotZ1 = y3d * Math.sin(rotX) + z3d * Math.cos(rotX);
+
+                    // Rotate on Y axis (slow sway)
+                    const rotX2 = x3d * Math.cos(rotY) - rotZ1 * Math.sin(rotY);
+                    const rotZ2 = x3d * Math.sin(rotY) + rotZ1 * Math.cos(rotY);
+
+                    // 3. Project to 2D screen coordinate space with perspective division
+                    // Shift coordinate grid depth offset of 380px to center it in distance
+                    const depth = rotZ2 + 380;
+                    if (depth > 0) {
+                        const scale = focalLength / depth;
+                        const screenX = centerX + rotX2 * scale;
+                        
+                        // Push projected coordinates vertically to sit perfectly at bottom of canvas
+                        const screenY = centerY + rotY1 * scale + 140;
+
+                        if (screenX >= 0 && screenX <= width && screenY >= 0 && screenY <= height) {
+                            // Depth calculations for fog-of-war fading
+                            const depthRatio = Math.max(0, Math.min(1, (depth - 150) / 700));
+                            const alpha = (1 - depthRatio) * 0.65; // Soft glow fading into distant horizon
+                            
+                            // Depth calculations for perspective particle sizing
+                            const size = (1 - depthRatio) * 2.0;
+
+                            if (alpha > 0.02) {
+                                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`; // Glowing Widescreen White Dots
+                                ctx.beginPath();
+                                ctx.arc(screenX, screenY, size, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    }
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(drawWavingSurface);
+        }
+
+        // Intersection Observer to run drawing loop ONLY when section is visible
+        const dotObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                isVisible = entry.isIntersecting;
+                if (isVisible) {
+                    cancelAnimationFrame(animationFrameId);
+                    drawWavingSurface();
+                } else {
+                    cancelAnimationFrame(animationFrameId);
+                }
+            });
+        }, { threshold: 0.05 });
+
+        dotObserver.observe(contactSection);
+    }
+
+    // 13. Interactive FAQ Accordion Trigger Handler with Question Fade & Typewriter Answers
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const trigger = item.querySelector('.faq-trigger');
+        const content = item.querySelector('.faq-content');
+        const contentText = item.querySelector('.faq-content-inner p');
+
+        if (trigger && content && contentText) {
+            // Save initial answer text to attribute for typing reference
+            const fullAnswer = contentText.textContent.trim();
+            item.setAttribute('data-fullanswer', fullAnswer);
+
+            trigger.addEventListener('click', () => {
+                const isActive = item.classList.contains('active');
+
+                // Clear any running typing loop for this item
+                if (item.typingInterval) {
+                    clearInterval(item.typingInterval);
+                }
+
+                // Close all other active FAQ items
+                faqItems.forEach(otherItem => {
+                    if (otherItem !== item) {
+                        otherItem.classList.remove('active');
+                        const otherContent = otherItem.querySelector('.faq-content');
+                        const otherText = otherItem.querySelector('.faq-content-inner p');
+                        if (otherContent) {
+                            otherContent.style.maxHeight = null;
+                            otherItem.querySelector('.faq-trigger').setAttribute('aria-expanded', 'false');
+                        }
+                        if (otherText) {
+                            otherText.textContent = otherItem.getAttribute('data-fullanswer') || '';
+                        }
+                        if (otherItem.typingInterval) {
+                            clearInterval(otherItem.typingInterval);
+                        }
+                    }
+                });
+
+                // Toggle logic
+                if (isActive) {
+                    item.classList.remove('active');
+                    content.style.maxHeight = null;
+                    trigger.setAttribute('aria-expanded', 'false');
+                    
+                    // Reset answer back to complete state when fully closed
+                    setTimeout(() => {
+                        contentText.textContent = fullAnswer;
+                    }, 400);
+                } else {
+                    item.classList.add('active');
+                    
+                    // Pre-clear text for clean typing start
+                    contentText.textContent = '';
+                    content.style.maxHeight = '200px'; // Give sufficient immediate space to prevent jumpiness
+                    trigger.setAttribute('aria-expanded', 'true');
+                    
+                    // Type out characters progressively
+                    let index = 0;
+                    item.typingInterval = setInterval(() => {
+                        if (index < fullAnswer.length) {
+                            contentText.textContent += fullAnswer.charAt(index);
+                            index++;
+                            // Scale container size dynamically with dynamic scrollHeight adjustments!
+                            content.style.maxHeight = content.scrollHeight + 'px';
+                        } else {
+                            clearInterval(item.typingInterval);
+                        }
+                    }, 10); // Ultra-responsive, slick 10ms typing tick
+                }
+            });
+        }
+    });
+
+    // 14. CEO Vision Reveal & Typing Animation
+    const ceoCard = document.getElementById('ceoCard');
+    const ceoRevealBtn = document.getElementById('ceoRevealBtn');
+    const ceoQuoteText = document.getElementById('ceoQuoteText');
+    
+    if (ceoCard && ceoRevealBtn && ceoQuoteText) {
+        let isTypingStarted = false;
+        
+        const revealVision = () => {
+            if (isTypingStarted) return;
+            isTypingStarted = true;
+            
+            // Add revealed class to shrink image, fade out button, and slide up content container
+            ceoCard.classList.add('vision-revealed');
+            
+            // Start character-by-character typing animation after visual shrink transition is underway
+            setTimeout(() => {
+                const fullText = ceoQuoteText.getAttribute('data-fulltext') || '';
+                ceoQuoteText.textContent = '';
+                
+                let index = 0;
+                const typingInterval = setInterval(() => {
+                    if (index < fullText.length) {
+                        ceoQuoteText.textContent += fullText.charAt(index);
+                        index++;
+                    } else {
+                        clearInterval(typingInterval);
+                    }
+                }, 15); // ~15ms per character creates a clean, elegant corporate typewriter feel
+            }, 600);
+        };
+        
+        ceoRevealBtn.addEventListener('click', revealVision);
+        
+        // Also allow clicking the image wrapper itself for a premium interactive vibe!
+        const imgWrap = ceoCard.querySelector('.combined-ceo-image-wrapper');
+        if (imgWrap) {
+            imgWrap.style.cursor = 'pointer';
+            imgWrap.addEventListener('click', revealVision);
+        }
+    }
+
+    // 15. Typing Mirror Effect for Hero Headings
+    const mainTitle = document.getElementById('heroTitleMain');
+    const mainTitleReflect = document.getElementById('heroTitleMainReflect');
+    const subTitle = document.getElementById('heroTitleSub');
+    const subTitleReflect = document.getElementById('heroTitleSubReflect');
+    
+    if (mainTitle && mainTitleReflect && subTitle && subTitleReflect) {
+        const textMain = mainTitle.getAttribute('data-text') || '';
+        const textSub = subTitle.getAttribute('data-text') || '';
+        
+        // Wipe pre-rendered fallback text as soon as JS successfully initializes to run the typewriter effect
+        mainTitle.textContent = '';
+        mainTitleReflect.textContent = '';
+        subTitle.textContent = '';
+        subTitleReflect.textContent = '';
+        
+        let indexMain = 0;
+        let indexSub = 0;
+        
+        // Type out main title character-by-character
+        const mainInterval = setInterval(() => {
+            if (indexMain < textMain.length) {
+                const char = textMain.charAt(indexMain);
+                mainTitle.textContent += char;
+                mainTitleReflect.textContent += char;
+                indexMain++;
+            } else {
+                clearInterval(mainInterval);
+                
+                // Start typing subtitle after main title finishes!
+                setTimeout(() => {
+                    const subInterval = setInterval(() => {
+                        if (indexSub < textSub.length) {
+                            const char = textSub.charAt(indexSub);
+                            subTitle.textContent += char;
+                            subTitleReflect.textContent += char;
+                            indexSub++;
+                        } else {
+                            clearInterval(subInterval);
+                        }
+                    }, 40); // authoritative, smooth cadence for sub-text
+                }, 150);
+            }
+        }, 55); // beautiful, authoritative cadence for main text
+    }
+
+    // 16. Premium Vertical Center Split Text Reveal Scroll Engine
+    const centerRevealTargets = document.querySelectorAll('.about-title, .action-title, .performance-title, .combined-section-title, .contact-title');
+    
+    // Automatically apply center-reveal class hooks safely
+    centerRevealTargets.forEach(target => {
+        target.classList.add('center-reveal-text');
+    });
+
+    const centerRevealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            // Trigger if element enters viewport OR is already scrolled above/near the top fold
+            if (entry.isIntersecting || entry.boundingClientRect.top < 0) {
+                entry.target.classList.add('revealed');
+                centerRevealObserver.unobserve(entry.target); // Unobserve once fully revealed for maximum scroll efficiency
+            }
+        });
+    }, {
+        threshold: 0.01, // Low threshold so even a tiny portion visible fires instantly
+        rootMargin: '0px 0px 80px 0px' // Pre-trigger unfolding 80px before entering screen
+    });
+
+    centerRevealTargets.forEach(target => {
+        centerRevealObserver.observe(target);
+    });
+
+    // 17. Volumetric Trigonometric Wavy Sine-Line Background Engine (IntersectionObserver Enabled)
+    const wavyCanvas = document.getElementById('ceoWavyCanvas');
+    const ceoFaqSection = document.getElementById('ceoFaqSection');
+    
+    if (wavyCanvas && ceoFaqSection) {
+        const ctx = wavyCanvas.getContext('2d');
+        let animationFrameId;
+        let phase = 0;
+        let isVisible = false;
+
+        // Vector sharp High-DPR backing scale handler
+        function resizeWavyCanvas() {
+            const rect = wavyCanvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            wavyCanvas.width = rect.width * dpr;
+            wavyCanvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        // Draw multiple overlaid waving waves
+        function drawWaves() {
+            if (!isVisible) return;
+            
+            const w = wavyCanvas.width / (window.devicePixelRatio || 1);
+            const h = wavyCanvas.height / (window.devicePixelRatio || 1);
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            // Define a highly vibrant, 6-wave multicolor holographic laser system
+            const waves = [
+                // Wave 1: Navy Blue (Primary Deep Base) - thick, slow flowing base wave
+                {
+                    amplitude: 45,
+                    frequency: 0.002,
+                    speed: 0.005,
+                    color: 'rgba(0, 43, 94, 0.09)',
+                    lineWidth: 3.5
+                },
+                // Wave 2: Neon Green (Grass Secondary Accent) - highly rich and organic
+                {
+                    amplitude: 32,
+                    frequency: 0.004,
+                    speed: 0.010,
+                    color: 'rgba(104, 189, 70, 0.17)',
+                    lineWidth: 2.8
+                },
+                // Wave 3: Electric Cyber Cyan (High-Tech Accent) - gorgeous blue glow
+                {
+                    amplitude: 24,
+                    frequency: 0.006,
+                    speed: 0.007,
+                    color: 'rgba(14, 165, 233, 0.16)',
+                    lineWidth: 2.2
+                },
+                // Wave 4: Glowing Amber Gold (Warm Corporate Accent) - bright golden thread
+                {
+                    amplitude: 18,
+                    frequency: 0.007,
+                    speed: 0.013,
+                    color: 'rgba(245, 158, 11, 0.13)',
+                    lineWidth: 1.8
+                },
+                // Wave 5: Neon Green (Grass Secondary Accent) - quick energetic overlay
+                {
+                    amplitude: 15,
+                    frequency: 0.009,
+                    speed: 0.016,
+                    color: 'rgba(104, 189, 70, 0.12)',
+                    lineWidth: 1.5
+                },
+                // Wave 6: Deep Navy Blue (Primary Accent) - dense high frequency backdrop
+                {
+                    amplitude: 10,
+                    frequency: 0.005,
+                    speed: 0.011,
+                    color: 'rgba(0, 43, 94, 0.06)',
+                    lineWidth: 1.2
+                }
+            ];
+            
+            phase += 0.5; // Base timing index
+
+            waves.forEach((wave) => {
+                ctx.beginPath();
+                ctx.strokeStyle = wave.color;
+                ctx.lineWidth = wave.lineWidth;
+                ctx.lineCap = 'round';
+                
+                // Draw trigonometric sine curve horizontally across canvas
+                for (let x = 0; x < w; x += 3) {
+                    // Combine sine wave math centered vertically: y = vertical_center + sin(x * freq + phase * speed) * amplitude
+                    const y = (h * 0.55) + Math.sin(x * wave.frequency + phase * wave.speed) * wave.amplitude 
+                              + Math.cos(x * 0.0015 - phase * 0.004) * (wave.amplitude * 0.3); // secondary modulator for organic variation
+                    
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            });
+            
+            animationFrameId = requestAnimationFrame(drawWaves);
+        }
+
+        // Window resize observer
+        window.addEventListener('resize', () => {
+            resizeWavyCanvas();
+        });
+        
+        // Trigger initial resize scale
+        resizeWavyCanvas();
+
+        // High performance IntersectionObserver triggers animation loop only when visible
+        const wavyObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                isVisible = entry.isIntersecting;
+                if (isVisible) {
+                    drawWaves();
+                } else {
+                    cancelAnimationFrame(animationFrameId);
+                }
+            });
+        }, { threshold: 0.05 });
+
+        wavyObserver.observe(ceoFaqSection);
+    }
+
+    // 16. Real-Time 3D Dotted Spinning Cyber Globe Background Engine
+    const globeCanvas = document.getElementById('globeDotCanvas');
+    if (globeCanvas) {
+        const ctx = globeCanvas.getContext('2d');
+        let globeAnimationFrameId;
+        let globePhase = 0;
+        let isGlobeVisible = false;
+
+        // High-DPI backing context for crisp Retina lines and dots
+        function resizeGlobeCanvas() {
+            const rect = globeCanvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            globeCanvas.width = rect.width * dpr;
+            globeCanvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        window.addEventListener('resize', resizeGlobeCanvas);
+        resizeGlobeCanvas();
+
+        // 3D Procedural Continent Mapping Check
+        function isLand(lat, lon) {
+            // Rough mathematical boundary boxes of Earth's main landmasses with high-frequency coastline noise
+            const noise = Math.sin(lat * 0.35) * Math.cos(lon * 0.35) * 3 + Math.sin(lon * 0.8) * 1.5;
+            
+            // 1. North America
+            if (lat > 15 + noise * 0.3 && lat < 78 && lon > -168 && lon < -52 + noise * 0.4) {
+                // Exclude Gulf of Mexico / Caribbean area
+                if (lat < 30 && lon > -95) return false;
+                return true;
+            }
+            
+            // 2. South America
+            if (lat > -56 && lat <= 15 + noise * 0.3 && lon > -82 + noise * 0.2 && lon < -34 + noise * 0.3) {
+                if (lat > 8 && lon < -76) return false;
+                return true;
+            }
+            
+            // 3. Africa
+            if (lat > -35 && lat < 37 + noise * 0.2 && lon > -18 + noise * 0.3 && lon < 51 + noise * 0.2) {
+                if (lat > 12 && lon > 43) return false; // Red Sea / Arabia split
+                if (lat > 18 && lon < -12) return false; // Bulge trim
+                return true;
+            }
+            
+            // 4. Eurasia (Europe + Asia)
+            if (lat > 5 + noise * 0.2 && lat < 76 && lon > -10 + noise * 0.2 && lon < 180) {
+                if (lat < 30 && lon > 34 && lon < 60) return false; // Arabian Peninsula separation
+                if (lat < 15 && lon > 60 && lon < 78) return false; // India ocean separation
+                if (lat < 10 && lon > 100) return true; // Southeast Asia
+                return true;
+            }
+            
+            // 5. Australia
+            if (lat > -44 && lat < -10 + noise * 0.4 && lon > 112 && lon < 154) {
+                return true;
+            }
+            
+            // 6. Greenland
+            if (lat > 60 && lat < 85 && lon > -75 && lon < -15) {
+                return true;
+            }
+            
+            // 7. Antarctica
+            if (lat < -62 + noise * 0.5) {
+                return true;
+            }
+
+            // 8. Island chains (Japan, Indonesia, Iceland, Great Britain)
+            if (lat > 30 && lat < 46 && lon > 129 && lon < 146) return true; // Japan
+            if (lat > -10 && lat < 10 && lon > 95 && lon < 141) return true; // Indonesia
+            if (lat > 50 && lat < 61 && lon > -10 && lon < 2) return true; // Great Britain
+            if (lat > 63 && lat < 67 && lon > -25 && lon < -13) return true; // Iceland
+            
+            return false;
+        }
+
+        // Generate points evenly spaced on a 3D sphere shell
+        const spherePoints = [];
+        const latSegments = 40; // Dense latitude rings
+        const lonSegments = 85; // Dense longitude columns
+
+        for (let i = 0; i < latSegments; i++) {
+            const phi = (i / latSegments) * Math.PI; // 0 to PI
+            const lat = 90 - (i / latSegments) * 180; // 90 to -90
+            
+            // Scale longitude columns by sine of latitude to keep coordinate density perfectly uniform
+            const currentLonSegments = Math.round(lonSegments * Math.sin(phi));
+            for (let j = 0; j < currentLonSegments; j++) {
+                const theta = (j / currentLonSegments) * Math.PI * 2; // 0 to 2PI
+                const lon = (j / currentLonSegments) * 360 - 180; // -180 to 180
+                
+                const land = isLand(lat, lon);
+                
+                // Assign a color theme type (navy blue base, green/cyan accents)
+                let colorType = 'navy';
+                const rand = Math.random();
+                if (rand > 0.85) {
+                    colorType = 'green';
+                } else if (rand > 0.7) {
+                    colorType = 'cyan';
+                }
+
+                spherePoints.push({
+                    x: Math.sin(phi) * Math.cos(theta),
+                    y: Math.sin(phi) * Math.sin(theta),
+                    z: Math.cos(phi),
+                    isLand: land,
+                    colorType: colorType
+                });
+            }
+        }
+
+        // 3D Tilted orbit angle and spin constants
+        const rotationSpeedY = 0.005; // Elegant rotation speed
+        const tiltX = 0.42; // ~24 degree static tilt for beautiful perspective angle
+        const cosTiltX = Math.cos(tiltX);
+        const sinTiltX = Math.sin(tiltX);
+
+        function draw3DGlobe() {
+            if (!isGlobeVisible) return;
+
+            const rect = globeCanvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const sphereRadius = Math.min(width, height) * 0.42;
+
+            ctx.clearRect(0, 0, width, height);
+
+            globePhase += rotationSpeedY;
+
+            // Pre-calculate rotation matrices
+            const cosRotY = Math.cos(globePhase);
+            const sinRotY = Math.sin(globePhase);
+
+            // 1. Rotate, project and compile points
+            const projectedPoints = [];
+
+            for (let i = 0; i < spherePoints.length; i++) {
+                const pt = spherePoints[i];
+
+                // Spin around Y axis (Globe rotation)
+                const xRotY = pt.x * cosRotY - pt.z * sinRotY;
+                const zRotY = pt.x * sinRotY + pt.z * cosRotY;
+
+                // Static tilt around X axis
+                const yRotX = pt.y * cosTiltX - zRotY * sinTiltX;
+                const zRotX = pt.y * sinTiltX + zRotY * cosTiltX;
+
+                // Perspective projection factor (Camera distance of 3.0 sphere diameters)
+                const cameraDistance = 3.0;
+                const perspective = cameraDistance / (cameraDistance + zRotX);
+
+                const screenX = centerX + xRotY * sphereRadius * perspective;
+                const screenY = centerY + yRotX * sphereRadius * perspective;
+
+                projectedPoints.push({
+                    x: screenX,
+                    y: screenY,
+                    depth: zRotX,
+                    isLand: pt.isLand,
+                    colorType: pt.colorType
+                });
+            }
+
+            // 2. Sort points by depth (Painter's algorithm: draw back-to-front!)
+            projectedPoints.sort((a, b) => b.depth - a.depth);
+
+            // 3. Render points
+            for (let i = 0; i < projectedPoints.length; i++) {
+                const pt = projectedPoints[i];
+
+                // Opacity mapping based on depth coordinates (back of sphere has lower opacity)
+                const depthFactor = (pt.depth + 1.0) / 2.0; // Normalized 0.0 to 1.0
+                
+                // If it is land: render highly opaque, beautifully distinct theme dots!
+                if (pt.isLand) {
+                    const alpha = 0.95 - (depthFactor * 0.7); // Front: 0.95, Back: 0.25
+                    const size = 3.5 - (depthFactor * 2.2); // Front: 3.5px, Back: 1.3px
+
+                    // Map matching colors
+                    let dotColor = `rgba(0, 43, 94, ${alpha * 0.4})`; // Navy Blue Continent dots
+                    if (pt.colorType === 'green') {
+                        dotColor = `rgba(104, 189, 70, ${alpha * 0.9})`; // Neon Green Continent dots
+                    } else if (pt.colorType === 'cyan') {
+                        dotColor = `rgba(14, 165, 233, ${alpha * 0.85})`; // Cyber Cyan Continent dots
+                    }
+
+                    ctx.beginPath();
+                    ctx.fillStyle = dotColor;
+                    ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Beautiful foreground green halo
+                    if (pt.colorType === 'green' && depthFactor < 0.2) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(104, 189, 70, ${alpha * 0.25})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.arc(pt.x, pt.y, size * 2.5, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                } else {
+                    // If it is ocean: draw extremely faint, tiny points to softly define the sphere boundaries!
+                    // This creates that exact high-end translucent dotted blueprint sphere style!
+                    const alpha = 0.08 - (depthFactor * 0.06); // Front: 0.08, Back: 0.02
+                    const size = 0.8; // Faint tiny dots
+
+                    // Ocean color is faint navy/cyan blend
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(0, 43, 94, ${alpha})`;
+                    ctx.arc(pt.x, pt.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            globeAnimationFrameId = requestAnimationFrame(draw3DGlobe);
+        }
+
+        // High performance IntersectionObserver triggers animation loop only when visible
+        const globeObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                isGlobeVisible = entry.isIntersecting;
+                if (isGlobeVisible) {
+                    cancelAnimationFrame(globeAnimationFrameId);
+                    draw3DGlobe();
+                } else {
+                    cancelAnimationFrame(globeAnimationFrameId);
+                }
+            });
+        }, { threshold: 0.05 });
+
+        globeObserver.observe(globeCanvas);
+    }
+});
