@@ -1059,8 +1059,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Draw trigonometric sine curve horizontally across canvas
                 for (let x = 0; x < w; x += 3) {
-                    // Combine sine wave math centered vertically: y = vertical_center + sin(x * freq + phase * speed) * amplitude
-                    const y = (h * 0.55) + Math.sin(x * wave.frequency + phase * wave.speed) * wave.amplitude 
+                    // Combine sine wave math anchored near the bottom: y = vertical_bottom + sin(x * freq + phase * speed) * amplitude
+                    const y = (h * 0.92) + Math.sin(x * wave.frequency + phase * wave.speed) * wave.amplitude 
                               + Math.cos(x * 0.0015 - phase * 0.004) * (wave.amplitude * 0.3); // secondary modulator for organic variation
                     
                     if (x === 0) {
