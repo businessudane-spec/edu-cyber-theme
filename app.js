@@ -153,8 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. '+' Menu toggle animation
+    // 5. '+' Menu toggle animation and submenu
     const menuToggle = document.getElementById('menuToggle');
+    const subMenuDropdown = document.getElementById('subMenuDropdown');
+    
     if (menuToggle) {
         menuToggle.addEventListener('click', () => {
             const plusIcon = menuToggle.querySelector('.plus-circle i');
@@ -163,9 +165,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (plusIcon.style.transform === 'rotate(45deg)') {
                     plusIcon.style.transform = 'rotate(0deg)';
                     menuToggle.style.borderColor = 'var(--color-border)';
+                    if (subMenuDropdown) {
+                        subMenuDropdown.classList.remove('show');
+                    }
                 } else {
                     plusIcon.style.transform = 'rotate(45deg)';
                     menuToggle.style.borderColor = 'var(--color-secondary)';
+                    if (subMenuDropdown) {
+                        subMenuDropdown.classList.add('show');
+                    }
                 }
             }
         });
@@ -322,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         animateWarp();
     }
 
-    // 7. Intersection Observer for Stat Counters Count Up Animation (Animated from 0 with cubic ease-out)
+    // 7. Intersection Observer for Stat Counters Count Up Animation (Odometer Falling Effect)
     const statsSection = document.getElementById('warpSection');
     const statNumbers = document.querySelectorAll('.stat-number');
     
@@ -336,27 +344,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     statNumbers.forEach(num => {
                         const target = parseInt(num.getAttribute('data-target'), 10);
-                        const duration = 2000; // Count over exactly 2.0s
-                        const startTime = performance.now();
                         
-                        function updateCount(currentTime) {
-                            const elapsedTime = currentTime - startTime;
-                            const progress = Math.min(elapsedTime / duration, 1);
-                            
-                            // Cubic ease-out: starts rapid and settles slowly to final numbers
-                            const easeProgress = 1 - Math.pow(1 - progress, 3);
-                            const currentValue = Math.floor(easeProgress * target);
-                            
-                            num.textContent = currentValue;
-                            
-                            if (progress < 1) {
-                                requestAnimationFrame(updateCount);
-                            } else {
-                                num.textContent = target; // Ensure exact targeted value
-                            }
-                        }
+                        // Add odometer class for CSS styles
+                        num.classList.add('odometer');
                         
-                        requestAnimationFrame(updateCount);
+                        // Initialize Odometer for slot machine falling effect
+                        const od = new Odometer({
+                            el: num,
+                            value: 0,
+                            format: 'd', // 'd' format removes commas
+                            theme: 'minimal',
+                            duration: 2500 // 2.5s falling duration
+                        });
+                        
+                        // Small delay to ensure render
+                        setTimeout(() => {
+                            num.innerHTML = target;
+                        }, 200);
                     });
                 }
             });
@@ -389,28 +393,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 9. Scroll Reveal Stagger Logic for About Section (Triggers on Scroll)
-    const aboutSection = document.getElementById('aboutSection');
-    const revealElements = document.querySelectorAll('#aboutSection .reveal-element');
+    // 9. Precise Scroll Reveal Stagger Logic
+    const revealElements = document.querySelectorAll('.reveal-element');
     
-    if (aboutSection && revealElements.length > 0) {
+    if (revealElements.length > 0) {
+        let staggerTimer = null;
+        let elementsToReveal = [];
+
+        // Observe the parent containers instead of the translated elements
         const revealObserver = new IntersectionObserver((entries) => {
+            let newlyIntersecting = [];
+
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    // Trigger sequential cascade reveal
-                    revealElements.forEach((el, index) => {
-                        setTimeout(() => {
-                            el.classList.add('revealed');
-                        }, index * 100); // Elegant 100ms staggered delay for smooth sequential reveals!
+                    // Find all reveal-elements inside this intersecting container
+                    const targets = entry.target.querySelectorAll('.reveal-element:not(.revealed)');
+                    targets.forEach(t => {
+                        if (!newlyIntersecting.includes(t)) newlyIntersecting.push(t);
                     });
                     
-                    // Unobserve once triggered to lock animation state
-                    revealObserver.unobserve(aboutSection);
+                    // Also check if the entry target itself is a reveal element
+                    if (entry.target.classList.contains('reveal-element') && !entry.target.classList.contains('revealed')) {
+                        if (!newlyIntersecting.includes(entry.target)) newlyIntersecting.push(entry.target);
+                    }
+                    
+                    revealObserver.unobserve(entry.target);
                 }
             });
-        }, { threshold: 0.15 }); // Trigger when 15% of the section is visible
+
+            if (newlyIntersecting.length > 0) {
+                elementsToReveal = elementsToReveal.concat(newlyIntersecting);
+                
+                if (!staggerTimer) {
+                    staggerTimer = setTimeout(() => {
+                        elementsToReveal.forEach((el, index) => {
+                            setTimeout(() => {
+                                el.classList.add('revealed');
+                            }, index * 120);
+                        });
+                        elementsToReveal = [];
+                        staggerTimer = null;
+                    }, 50);
+                }
+            }
+        }, { threshold: 0.6 }); // Trigger only when container is 60% visible (completely there)
         
-        revealObserver.observe(aboutSection);
+        // Observe sections and specific containers that might hold heavily translated elements
+        document.querySelectorAll('section, .performance-left-col, .performance-right-col').forEach(container => {
+            revealObserver.observe(container);
+        });
     }
 
     // 10. Scroll Stack & Fan Physics Interpolation Engine for Action Section
@@ -584,10 +615,32 @@ document.addEventListener('DOMContentLoaded', () => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     statsPerformanceSection.classList.add('revealed');
-                    statsPerfObserver.unobserve(statsPerformanceSection); // Trigger toggle animation once
+                    
+                    // Trigger elastic toggle stretch animation on each track with its inline delay
+                    const toggleTracks = statsPerformanceSection.querySelectorAll('.toggle-stretch-anim');
+                    const TRACK_DURATION = 900; // 0.9s track animation duration in ms
+
+                    toggleTracks.forEach(track => {
+                        const trackDelay = parseFloat(track.style.animationDelay || '0') * 1000;
+                        const knob = track.querySelector('.performance-toggle-knob');
+
+                        // Step 1: animate the track after its delay
+                        setTimeout(() => {
+                            track.classList.add('toggle-active');
+                        }, trackDelay);
+
+                        // Step 2: reveal the knob only AFTER the track has fully landed
+                        if (knob) {
+                            setTimeout(() => {
+                                knob.classList.add('knob-visible');
+                            }, trackDelay + TRACK_DURATION);
+                        }
+                    });
+
+                    statsPerfObserver.unobserve(statsPerformanceSection);
                 }
             });
-        }, { threshold: 0.15 }); // Trigger when 15% of the section is visible
+        }, { threshold: 0.6 }); // Only when user is fully at the section
         
         statsPerfObserver.observe(statsPerformanceSection);
 

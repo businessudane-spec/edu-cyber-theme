@@ -7,6 +7,8 @@
     <title>EduCyberSecurity Leadership Summit 2026</title>
     <!-- FontAwesome for Premium Tech Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Odometer CSS for Falling Numbers -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/odometer.js/0.4.8/themes/odometer-theme-minimal.min.css">
     <!-- Custom Style Sheet -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -18,30 +20,33 @@
             <!-- Left Header: Logo & Capsule Menu + Meta Tags -->
             <div class="header-left">
                 <a href="#" class="summit-logo">
-                    Edu<span class="logo-bold">CyberSecurity</span>
+                    <img src="images/logo.png" alt="EduCyberSecurity" class="header-logo-img">
                 </a>
                 
                 <!-- Pill-Shaped Active Capsule Menu -->
-                <div class="menu-capsule">
+                <div class="menu-wrapper" style="display: flex; align-items: center; gap: 8px;">
                     <button class="menu-pill-btn" id="menuToggle">
                         <span class="plus-circle"><i class="fas fa-plus"></i></span>
                         <span class="menu-text">Menu</span>
                     </button>
+                    <!-- Submenu items inline -->
+                    <div class="sub-menu-inline" id="subMenuDropdown">
+                        <a href="#agenda" class="sub-menu-inline-item">Agenda</a>
+                        <a href="#gallery" class="sub-menu-inline-item">Gallery</a>
+                    </div>
                 </div>
                 
-                <!-- Elegant Technical Meta Capsules -->
+                <!-- Elegant Technical Meta Capsules (Removed as requested) -->
                 <div class="info-capsules-group">
-                    <div class="info-capsule">Summit 2026</div>
-                    <div class="info-capsule">Leadership & AI</div>
                 </div>
             </div>
 
             <!-- Right Header: Minimalism Action Capsule -->
             <div class="header-right">
-                <a href="#" class="cta-capsule">
+                <button class="cta-capsule" id="requestInvitationBtn">
                     <span class="cta-icon-circle"><i class="fas fa-shield-halved"></i></span>
                     <span class="cta-text">Request Invitation</span>
-                </a>
+                </button>
             </div>
         </div>
     </header>
@@ -75,7 +80,7 @@
                 <div class="hero-footer-inner">
                     <!-- Bottom Left Vision Content -->
                     <div class="hero-footer-left">
-                        <span class="footer-small-label">Connect &bull; Secure &bull; Educate</span>
+                        <span class="footer-small-label highlight-simple">Connect &bull; Secure &bull; Educate</span>
                         <p class="footer-vision-text">
                             Where education stays ahead of every threat — the premier cybersecurity summit for education leaders.
                         </p>
@@ -87,7 +92,7 @@
                     <!-- Bottom Right Minimalist Fine Capsules -->
                     <div class="hero-footer-right">
                         <span class="outline-pill">Cyber Defense</span>
-                        <button class="outline-pill interactive-popup-btn" onclick="openPopupForm()">Reserve your Frontier spot</button>
+                        <button class="outline-pill interactive-popup-btn">Reserve your Frontier spot</button>
                         <span class="outline-pill">Global Trust</span>
                     </div>
                 </div>
@@ -100,40 +105,24 @@
         <div class="ticker-wrapper">
             <div class="ticker-track">
                 <!-- Track Part 1 -->
-                <span class="ticker-item">EdTech Cyber</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">MDR Framework</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Guardian</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">EdShield</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Threat Mitigation</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Sovereign AI</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Zero Trust</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Cognitive Security</span>
-                <span class="ticker-dot"></span>
+                <span class="ticker-item glowing-text">EdTech Cyber</span>
+                <span class="ticker-item glowing-text">MDR Framework</span>
+                <span class="ticker-item glowing-text">Guardian</span>
+                <span class="ticker-item glowing-text">EdShield</span>
+                <span class="ticker-item glowing-text">Threat Mitigation</span>
+                <span class="ticker-item glowing-text">Sovereign AI</span>
+                <span class="ticker-item glowing-text">Zero Trust</span>
+                <span class="ticker-item glowing-text">Cognitive Security</span>
                 
                 <!-- Track Part 2 (Exact mirror copy to create endless loop without gaps) -->
-                <span class="ticker-item">EdTech Cyber</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">MDR Framework</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Guardian</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">EdShield</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Threat Mitigation</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Sovereign AI</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Zero Trust</span>
-                <span class="ticker-dot"></span>
-                <span class="ticker-item">Cognitive Security</span>
-                <span class="ticker-dot"></span>
+                <span class="ticker-item glowing-text">EdTech Cyber</span>
+                <span class="ticker-item glowing-text">MDR Framework</span>
+                <span class="ticker-item glowing-text">Guardian</span>
+                <span class="ticker-item glowing-text">EdShield</span>
+                <span class="ticker-item glowing-text">Threat Mitigation</span>
+                <span class="ticker-item glowing-text">Sovereign AI</span>
+                <span class="ticker-item glowing-text">Zero Trust</span>
+                <span class="ticker-item glowing-text">Cognitive Security</span>
             </div>
         </div>
     </section>
@@ -348,7 +337,7 @@
     <section class="performance-stats-section" id="statsPerformanceSection">
         <div class="performance-container">
             
-            <div class="performance-header">
+            <div class="performance-header reveal-element reveal-fade-up">
                 <span class="performance-subtitle">Live Experience</span>
                 <h2 class="performance-title">Sangfor MDR <span>Live Experience Zone</span></h2>
                 <p class="performance-lead">Experience next-generation cybersecurity for the education sector</p>
@@ -357,14 +346,14 @@
             <div class="performance-grid">
                 <!-- Left Column: Active Security Demonstration Panel -->
                 <div class="performance-left-col">
-                    <div class="simulator-panel-header">
+                    <div class="simulator-panel-header reveal-element reveal-fade-up">
                         <span class="simulator-badge">ACTIVE SECURITY DEMONSTRATION UNIT</span>
                         <h3 class="simulator-panel-title">SELECT THREAT TO SIMULATE ON ENDPOINT:</h3>
                     </div>
                     
                     <div class="performance-rows">
                         <!-- Row 1: Ransomware -->
-                        <div class="performance-row" data-threat="ransomware">
+                        <div class="performance-row reveal-element reveal-fade-up" data-threat="ransomware">
                             <div class="performance-stat-col">
                                 <div class="threat-info-wrap">
                                     <span class="threat-emoji">☣️</span>
@@ -380,14 +369,14 @@
                                 </div>
                             </div>
                             <div class="performance-slider-col">
-                                <div class="performance-toggle-track track-silver">
+                                <div class="performance-toggle-track track-silver toggle-stretch-anim" style="animation-delay: 0.2s;">
                                     <div class="performance-toggle-knob"></div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Row 2: Data Exfil -->
-                        <div class="performance-row" data-threat="exfil">
+                        <div class="performance-row reveal-element reveal-fade-up" data-threat="exfil">
                             <div class="performance-stat-col">
                                 <div class="threat-info-wrap">
                                     <span class="threat-emoji">📡</span>
@@ -403,14 +392,14 @@
                                 </div>
                             </div>
                             <div class="performance-slider-col">
-                                <div class="performance-toggle-track track-cyan">
+                                <div class="performance-toggle-track track-cyan toggle-stretch-anim" style="animation-delay: 0.55s;">
                                     <div class="performance-toggle-knob"></div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Row 3: Zero-Day -->
-                        <div class="performance-row" data-threat="zeroday">
+                        <div class="performance-row reveal-element reveal-fade-up" data-threat="zeroday">
                             <div class="performance-stat-col">
                                 <div class="threat-info-wrap">
                                     <span class="threat-emoji">🛡️</span>
@@ -426,16 +415,17 @@
                                 </div>
                             </div>
                             <div class="performance-slider-col">
-                                <div class="performance-toggle-track track-purple">
+                                <div class="performance-toggle-track track-purple toggle-stretch-anim" style="animation-delay: 0.9s;">
                                     <div class="performance-toggle-knob"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Right Column: Visual Frame with live.jpeg (Enlarged) -->
-                <div class="performance-right-col">
+                <div class="performance-right-col reveal-element reveal-image-mask">
                     <div class="performance-image-wrapper">
                         <img src="images/live.jpeg" alt="Sangfor MDR Live Experience Zone" class="performance-img">
                         
@@ -462,20 +452,30 @@
         </div>
     </section>
 
-    <!-- 8. Combined CEO Vision & FAQs Section (Bright White Theme) -->
+    <!-- MDR Video Experience Section -->
+    <section class="mdr-video-section" id="mdrVideoSection">
+        <!-- Background Video -->
+        <video class="mdr-video-bg" autoplay muted loop playsinline>
+            <source src="videos/vi.mp4" type="video/mp4">
+        </video>
+
+        <!-- Content -->
+        <div class="mdr-video-content reveal-element reveal-fade-up">
+            <p class="mdr-video-text">
+                Step into the Live MDR Experience Zone at the <strong>EduCyberSecurity Leadership Summit 2026</strong>. Attendees will witness a fully interactive demonstration of Sangfor's MDR solution — purpose-built for education — featuring AI-driven threat detection, continuous monitoring, and automated response.
+            </p>
+            <p class="mdr-video-text">
+                Engage directly with the technology, explore real-world attack scenarios, and see how MDR transforms cybersecurity from <em>reactive defense</em> to <em>proactive protection</em> in real time.
+            </p>
+        </div>
+    </section>
+
+
     <section class="ceo-faq-section" id="ceoFaqSection">
         <!-- Dynamic Volumetric Wavy Lines Background Canvas -->
         <canvas id="ceoWavyCanvas"></canvas>
-        
-        <!-- Premium 3D Dotted Spinning Globe Background Canvas -->
-        <canvas id="globeDotCanvas"></canvas>
 
         <div class="ceo-faq-container">
-            <!-- Side-by-side descriptive closing callout -->
-            <div class="performance-footer-text">
-                <p class="performance-footer-p">Step into the Live MDR Experience Zone at the EduCyberSecurity Leadership Summit 2026. Attendees will witness a fully interactive demonstration of Sangfor's MDR solution — purpose-built for education — featuring AI-driven threat detection, continuous monitoring, and automated response.</p>
-                <p class="performance-footer-p">Engage directly with the technology, explore real-world attack scenarios, and see how MDR transforms cybersecurity from reactive defense to proactive protection in real time.</p>
-            </div>
 
             <!-- Centered Unified Section Header -->
             <div class="combined-section-header">
@@ -643,7 +643,92 @@
 
     <!-- Apple-Like Buttery Smooth Scroll Engine (Lenis) -->
     <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+    <!-- Odometer JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/odometer.js/0.4.8/odometer.min.js"></script>
     <!-- Core Interactions Script -->
     <script src="app.js"></script>
+
+    <!-- ===================== Request Invitation Modal ===================== -->
+    <div class="ri-backdrop" id="riBackdrop"></div>
+    <div class="ri-modal" id="riModal" role="dialog" aria-modal="true" aria-labelledby="riModalTitle">
+        <button class="ri-close" id="riClose" aria-label="Close">&times;</button>
+
+        <div class="ri-modal-header">
+            <span class="ri-modal-tag">EduCyberSecurity Summit 2026</span>
+            <h2 class="ri-modal-title" id="riModalTitle">Request Your Invitation</h2>
+            <p class="ri-modal-sub">Fill in your details and we'll get back to you shortly.</p>
+        </div>
+
+        <form class="ri-form" id="riForm" novalidate>
+            <div class="ri-field-row">
+                <div class="ri-field">
+                    <label class="ri-label" for="riName">Full Name <span class="ri-req">*</span></label>
+                    <input class="ri-input" type="text" id="riName" name="name" placeholder="John Smith" required>
+                </div>
+                <div class="ri-field">
+                    <label class="ri-label" for="riEmail">Email Address <span class="ri-req">*</span></label>
+                    <input class="ri-input" type="email" id="riEmail" name="email" placeholder="john@example.com" required>
+                </div>
+            </div>
+            <div class="ri-field">
+                <label class="ri-label" for="riPhone">Phone Number <span class="ri-req">*</span></label>
+                <input class="ri-input" type="tel" id="riPhone" name="phone" placeholder="+971 50 000 0000" required>
+            </div>
+            <div class="ri-field">
+                <label class="ri-label" for="riMessage">Message <span class="ri-optional">(Optional)</span></label>
+                <textarea class="ri-input ri-textarea" id="riMessage" name="message" placeholder="Tell us about your role or what you'd like to learn at the summit…" rows="4"></textarea>
+            </div>
+            <button type="submit" class="ri-submit">
+                <i class="fas fa-shield-halved"></i>
+                <span>Submit Request</span>
+            </button>
+        </form>
+
+        <div class="ri-success" id="riSuccess">
+            <div class="ri-success-icon"><i class="fas fa-circle-check"></i></div>
+            <h3>Request Sent!</h3>
+            <p>Thank you, we'll be in touch with your invitation details soon.</p>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const btn    = document.getElementById('requestInvitationBtn');
+        const modal  = document.getElementById('riModal');
+        const backdrop = document.getElementById('riBackdrop');
+        const closeBtn = document.getElementById('riClose');
+        const form   = document.getElementById('riForm');
+        const success = document.getElementById('riSuccess');
+
+        function openModal() {
+            modal.classList.add('ri-open');
+            backdrop.classList.add('ri-open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            modal.classList.remove('ri-open');
+            backdrop.classList.remove('ri-open');
+            document.body.style.overflow = '';
+            setTimeout(() => {
+                form.reset();
+                form.style.display = '';
+                success.style.display = 'none';
+            }, 400);
+        }
+
+        btn && btn.addEventListener('click', openModal);
+        closeBtn && closeBtn.addEventListener('click', closeModal);
+        backdrop && backdrop.addEventListener('click', closeModal);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+        form && form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            form.style.display = 'none';
+            success.style.display = 'flex';
+        });
+    })();
+    </script>
 </body>
 </html>
+
