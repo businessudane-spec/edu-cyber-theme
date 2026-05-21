@@ -115,42 +115,40 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        clearText();
-
-        heroVideo.addEventListener('timeupdate', () => {
-            // When video hits exactly 5 seconds, pause it
-            if (!isWaiting && heroVideo.currentTime >= 5.0) {
-                heroVideo.pause();
-                isWaiting = true;
-                
-                // Show pill background
-                titleSub.classList.add('pill-active');
-                if (titleSubReflect) titleSubReflect.classList.add('pill-active');
-                
-                // 1. Start typing the subtitle (Pill box), then the main title
-                typeWriter(titleSub, titleSubReflect, subText, 40, () => {
-                    typeWriter(titleMain, titleMainReflect, mainText, 60, () => {
+        // Decouple text animation from the video so the video can play and loop seamlessly
+        function startTextAnimationLoop() {
+            // Show pill background
+            titleSub.classList.add('pill-active');
+            if (titleSubReflect) titleSubReflect.classList.add('pill-active');
+            
+            // 1. Start typing the subtitle (Pill box), then the main title
+            typeWriter(titleSub, titleSubReflect, subText, 40, () => {
+                typeWriter(titleMain, titleMainReflect, mainText, 60, () => {
+                    
+                    // 2. Text has finished appearing. Wait 5 seconds here.
+                    setTimeout(() => {
+                        // 3. Trigger the shattered text particle explosion (fades away)
+                        explodeText();
                         
-                        // 2. Text has finished appearing. Wait 5 seconds here.
+                        // Restart the video exactly when the text begins to fade away
+                        heroVideo.currentTime = 0;
+                        heroVideo.play().catch(e => console.log('Playback error', e));
+                        
+                        // 4. Wait for the explosion animation to settle before resetting text
                         setTimeout(() => {
-                            // 3. Trigger the shattered text particle explosion
-                            explodeText();
-                            
-                            // 4. Wait for the explosion animation to settle before resetting video
-                            setTimeout(() => {
-                                clearText();
-                                heroVideo.currentTime = 0;
-                                heroVideo.play().then(() => {
-                                    isWaiting = false; // Opens the gate for the next loop
-                                }).catch(e => console.log('Playback error', e));
-                            }, 1800);
-                            
-                        }, 5000);
+                            clearText();
+                            // Wait 5 seconds (while the 5s video plays) before typing the text again
+                            setTimeout(startTextAnimationLoop, 5000);
+                        }, 1800);
                         
-                    });
+                    }, 5000);
+                    
                 });
-            }
-        });
+            });
+        }
+
+        // Start the very first animation cycle 5 seconds after page loads
+        setTimeout(startTextAnimationLoop, 5000);
     }
 
     // 5. '+' Menu toggle animation and submenu
@@ -444,40 +442,41 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 10. Scroll Stack & Fan Physics Interpolation Engine for Action Section
+    // 10. Action Section — auto 3D carousel (2 rounds) then spread
     const actionSection = document.getElementById('actionSection');
     if (actionSection) {
-        const actionCards = actionSection.querySelectorAll('.action-card');
-        
-        // High-performance scroll handler (automatic spring fanning on entry)
-        function updateCardFanning() {
-            if (window.innerWidth <= 991) {
-                actionSection.classList.remove('spread-active');
-                return;
-            }
+        const cardsGrid = actionSection.querySelector('.action-cards-grid');
+        let hasAnimated = false;
 
-            const rect = actionSection.getBoundingClientRect();
-            const sectionHeight = rect.height;
-            const windowHeight = window.innerHeight;
-            
-            const scrollDistance = -rect.top;
-            const scrollMax = sectionHeight - windowHeight;
-            
-            let progress = scrollDistance / scrollMax;
-            progress = Math.max(0, Math.min(1, progress));
+        function triggerCarousel() {
+            if (hasAnimated || window.innerWidth <= 991) return;
+            hasAnimated = true;
 
-            // Trigger full spring-fanning animation once visitor scrolls 10% into the section
-            if (progress >= 0.10) {
-                actionSection.classList.add('spread-active');
-            } else {
-                actionSection.classList.remove('spread-active');
-            }
+            // Step 1: snap cards into carousel circle positions
+            actionSection.classList.remove('spread-active');
+            actionSection.classList.add('carousel-active');
+
+            // Step 2: when spin animation ends → spread
+            cardsGrid.addEventListener('animationend', () => {
+                cardsGrid.style.transform = ''; // reset grid rotation
+                actionSection.classList.remove('carousel-active');
+                // Small pause then spread so it feels intentional
+                setTimeout(() => {
+                    actionSection.classList.add('spread-active');
+                }, 120);
+            }, { once: true });
         }
 
-        // Bind events
-        window.addEventListener('scroll', updateCardFanning, { passive: true });
-        window.addEventListener('resize', updateCardFanning);
-        updateCardFanning(); // Run initial execution
+        const carouselObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    triggerCarousel();
+                    carouselObserver.unobserve(actionSection);
+                }
+            });
+        }, { threshold: 0.4 });
+
+        carouselObserver.observe(actionSection);
     }
 
     // 10b. Cybernetic Animated Spiral Background Engine (IntersectionObserver Powered)
@@ -665,9 +664,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     statusEl.textContent = 'Ready to test';
                     statusEl.className = 'threat-status status-vulnerable';
                     
-                    // Hide scanning HUD only if no other rows are currently active
-                    const anyActive = Array.from(performanceRows).some(r => r.classList.contains('sim-active'));
-                    if (!anyActive && imgWrapper.classList.contains('scanning')) {
+                    // Hide scanning HUD only if no other rows are currently scanning
+                    const anyScanning = Array.from(performanceRows).some(r => r.querySelector('.threat-status').classList.contains('status-scanning'));
+                    if (!anyScanning) {
                         imgWrapper.classList.remove('scanning');
                     }
                     return;
@@ -710,9 +709,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Briefly pulse HUD green, then fade it back out to restore normal live feed
                         row.hudTimeout = setTimeout(() => {
                             if (row.classList.contains('sim-active')) {
-                                // Only hide scanning overlay if no other row is active anymore
-                                const anyActive = Array.from(performanceRows).some(r => r.classList.contains('sim-active'));
-                                if (!anyActive) {
+                                // Only hide scanning overlay if no other row is currently scanning
+                                const anyScanning = Array.from(performanceRows).some(r => r.querySelector('.threat-status').classList.contains('status-scanning'));
+                                if (!anyScanning) {
                                     imgWrapper.classList.remove('scanning');
                                 }
                             }
