@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (heroVideo && titleMain) {
         heroVideo.removeAttribute('loop'); // We control the loop manually
         
-        const subText = "Leadership Summit 2026";
-        const mainText = "EduCyberSecurity";
+        const subText = "Connect • Secure • Educate";
+        const mainText = "EDTECH SECURITY\nSUMMIT 2026";
         
         let isWaiting = false;
 
@@ -117,9 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Decouple text animation from the video so the video can play and loop seamlessly
         function startTextAnimationLoop() {
-            // Show pill background
-            titleSub.classList.add('pill-active');
-            if (titleSubReflect) titleSubReflect.classList.add('pill-active');
+            // Show pill background only if subText is not empty
+            if (subText.trim() !== '') {
+                titleSub.classList.add('pill-active');
+                if (titleSubReflect) titleSubReflect.classList.add('pill-active');
+            }
             
             // 1. Start typing the subtitle (Pill box), then the main title
             typeWriter(titleSub, titleSubReflect, subText, 40, () => {
